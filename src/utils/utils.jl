@@ -14,3 +14,21 @@ function get_aux_condition(r, aux::String, condition)
     end
     reduce(hcat, s)[:]
 end
+
+function get_act_dict(proj_meta)
+    rd = proj_meta["rd"][:]
+    act_dict = Dict()
+    for animal in eachindex(rd)
+        r = rd[animal]
+        rdict = Dict()
+        for condition in unique(r["Condition"])
+            rdict[Int(condition)] = Dict()
+            rdict[condition]["act"] = get_act_condition(r, condition)
+            for key in aux_keys
+                rdict[condition][key] = get_aux_condition(r, key, condition)
+            end
+        end
+        act_dict[animal] = rdict
+    end
+    return act_dict
+end
