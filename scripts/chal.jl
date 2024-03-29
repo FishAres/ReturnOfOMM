@@ -3,10 +3,16 @@ using DrWatson
 using LinearAlgebra, Statistics
 using Plots
 using MAT
+using NaNStatistics
+
 
 plotlyjs()
 
 include(srcdir("utils/utils.jl"))
+include(srcdir("utils", "grating_utils.jl"))
+include(srcdir("utils", "act_utils.jl"))
+
+
 ## ====
 data_dir = "C:/Users/aresf/Desktop/OMM_archive_submission_final/OMM_archive_submission_final/data"
 
@@ -15,7 +21,38 @@ aux_keys = ["blink", "GratFlash", "Licking", "pupil_diam", "Flip", "Reward", "ve
 @time act_dict = get_act_dict(matread(data_dir * "/OMM_1_meta.mat")["proj_meta"], aux_keys)
 
 ## ====
-act_dict[1][1]
+win_pre, win_post = 15, 15
+animal, condition = 4, 4
+
+gratings = act_dict[animal][condition]["GratFlash"]
+xpos = act_dict[animal][condition]["VRx"]
+trav_inds = [1; findall(<(-1), diff(xpos)) .+ 1; length(xpos)]
+
+grat_onsets = clean_grating_onsets(gratings, xpos)
+
+act = act_dict[animal][condition]["act"]
+
+
+grat_acts = get_grat_acts(act, grat_onsets, trav_inds)
+sz = maximum(size.(grat_acts))
+grat_acts = map(x -> pad_array(x, sz), grat_acts)
+grat_acts = permutedims(cat(grat_acts..., dims=4), (1, 4, 2, 3))
+
+ga_mn = mean_subtract(grat_acts, 8:12, dims=3)
+
+
+begin
+    p = [
+        begin
+            plot(squeeze(nanmean(ga_mn[:, i, :, :], dims=3))', legend=false)
+            vline!([15], color=:black)
+            xticks!(0:15:45, string.(-1:1:2))
+        end for i in 1:5
+    ]
+    plot(p...)
+end
+
+## ====
 
 for animal in 1:9
     for condition in keys(act_dict[animal])

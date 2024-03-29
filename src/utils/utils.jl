@@ -17,6 +17,31 @@ function get_aux_condition(r, aux::String, condition)
     reduce(hcat, s)[:]
 end
 
+
+function get_act_dict(proj_meta, aux_keys)
+    rd = proj_meta["rd"][:]
+    rd[3]["Condition"][:, 4] .= 2 # was noted in original Matlab code
+    act_dict = Dict()
+    for animal in eachindex(rd)
+        r = rd[animal]
+        rdict = Dict()
+        for condition in unique(r["Condition"])
+            rdict[Int(condition)] = Dict()
+            rdict[condition]["act"] = get_act_condition(r, condition)
+            for key in aux_keys
+                if haskey(r, key)
+                    rdict[condition][key] = get_aux_condition(r, key, condition)
+                end
+            end
+        end
+        act_dict[animal] = rdict
+    end
+    return act_dict
+end
+
+
+## ==== WIP: more ways of cleaning up grating onsets
+
 inds_to_keep(x) = length(x) > 1 ? argmax(x) : 1
 
 function clean_grat_inds(f_inds_to_keep, trav_grat_onsets, trav_grat_offsets, xpos; loc_d=0.4)
@@ -74,23 +99,7 @@ function get_clean_grat_inds(gratings::AbstractArray, xpos::AbstractArray, f_ind
     return clean_inds
 end
 
-function get_act_dict(proj_meta, aux_keys)
-    rd = proj_meta["rd"][:]
-    act_dict = Dict()
-    for animal in eachindex(rd)
-        r = rd[animal]
-        rdict = Dict()
-        for condition in unique(r["Condition"])
-            rdict[Int(condition)] = Dict()
-            rdict[condition]["act"] = get_act_condition(r, condition)
-            for key in aux_keys
-                rdict[condition][key] = get_aux_condition(r, key, condition)
-            end
-        end
-        act_dict[animal] = rdict
-    end
-    return act_dict
-end
+
 
 function get_clean_grat_inds(act_dict::Dict, animal::Int, condition::Number, f_inds_to_keep::Function=inds_to_keep)
     gratings = act_dict[animal][condition]["GratFlash"]
