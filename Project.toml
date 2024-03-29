@@ -4,6 +4,7 @@ authors = ["FishAres"]
 [deps]
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 NPZ = "15e1cf62-19b3-5cfa-8e77-841668bca605"
 PlotlyJS = "f0f68f2c-4968-5e81-91da-67840de0976a"
