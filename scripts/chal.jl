@@ -4,29 +4,73 @@ using LinearAlgebra, Statistics
 using Plots
 using MAT
 
+plotlyjs()
+
 include(srcdir("utils/utils.jl"))
-
+## ====
 data_dir = "C:/Users/aresf/Desktop/OMM_archive_submission_final/OMM_archive_submission_final/data"
-
-readdir(data_dir)
 
 aux_keys = ["blink", "GratFlash", "Licking", "pupil_diam", "Flip", "Reward", "velP_smoothed", "airPuff", "VRx", "pupil_pos"]
 
-@time act_dict = get_act_dict(proj_meta)
+@time act_dict = get_act_dict(matread(data_dir * "/OMM_1_meta.mat")["proj_meta"])
 
-begin
-    condition = 4
-    act_dict[4][condition]["act"]
-    g = act_dict[4][condition]["GratFlash"]
-    rw = act_dict[4][condition]["Reward"]
-    xpos = act_dict[4][condition]["VRx"]
+## ====
 
-    g_inds = findall(>(1), diff(g)) .+ 1
-    rw_inds = findall(>(1), diff(rw)) .+ 1
-end
+@time clean_inds = get_clean_grat_inds(act_dict, 5, 3)
 
-g_inds
-rw_inds
+reduce(vcat, clean_inds)
+
+
+
+
+i = 20
+gont = trav_grat_onsets[i]
+grat_len = trav_grat_offsets[i] .- gont
+x = xpos[gont]
+
+grats_per_pos = [gont[gl-loc_d.<=x.<=gl+loc_d] for gl in grat_locs]
+grat_dur_per_pos = [grat_len[gl-loc_d.<=x.<=gl+loc_d] for gl in grat_locs]
+map((x, y) -> x[inds_to_keep(y)], grats_per_pos, grat_dur_per_pos)
+
+mean(length.(clean_inds))
+
+scatter(x, grat_len)
+
+
+# tmp = [(b .- a) for (a, b) in zip(grat_on_trav, grat_off_trav)]
+
+
+
+
+
+
+## ====
+
+
+
+
+findall(x -> length(x) > 5, grat_per_trav)
+
+plot(trav_xpos[9])
+plot!(gw[9])
+
+grat_on_trav[9]
+grat_off_trav[9]
+
+grat_durations = map((a, b) -> a - b, grat_off_trav, grat_on_trav)
+
+grat_on_trav[9]
+
+
+xp = [xpos[xt[i]:xt[i+1]] for i in eachindex(xt[1:end-1])]
+go = map(x -> findall(>(1), diff(x)), gw)
+
+
+
+histogram(diff(xt_inds))
+histogram!(diff(rw_inds), alpha=0.5)
+minimum(diff(xt_inds))
+mean(diff(xt_inds)) / 15
 
 rwi = [1; rw_inds]
 
@@ -34,22 +78,16 @@ gw = [g[rwi[i]:rwi[i+1]] for i in eachindex(rwi[1:end-1])]
 xp = [xpos[rwi[i]:rwi[i+1]] for i in eachindex(rwi[1:end-1])]
 
 go = map(x -> findall(>(1), diff(x)), gw)
-gb = findall(>(5), length.(go))
+grat_duplication_inds = findall(!=(5), length.(go))
 
-plot(gw[gb[1]])
-plot!(xp[gb[1]])
+for ind in eachindex(grat_duplication_inds)
+    tmp = gw[grat_duplication_inds[ind]]
+    p = plot(tmp)
+    plot!(xp[grat_duplication_inds[ind]])
+    xticks!(1:30:length(tmp), string.(Int.(0:2:length(tmp)/15)))
 
-argmin(diff(rw_inds))
-minimum(diff(rw_inds))
-
-rw_inds[61]
-rw_inds[62]
-
-plot(rw[rw_inds[60]:rw_inds[62]])
-vline!(rw_inds[61])
-
-histogram(diff(rwi))
-
+    display(p)
+end
 
 
 
