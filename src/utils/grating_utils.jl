@@ -2,8 +2,6 @@
 Utils for grating onsets
 """
 
-using PaddedViews
-using NaNStatistics
 
 """
 Remove duplicate grating onsets by keeping first

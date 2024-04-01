@@ -2,6 +2,14 @@
 Utility functions for OMM data bundling and cleaning
 ```
 
+using DrWatson
+using MAT
+
+include(srcdir("utils", "grating_utils.jl"))
+include(srcdir("utils", "act_utils.jl"))
+include(srcdir("utils", "selectivity_utils.jl"))
+
+
 function get_act_condition(r, condition)
     as = r["act"][r["Condition"].==Float64(condition)]
     # m = trunc(Int, length(as) / 4) # all rd data are 4 x something
