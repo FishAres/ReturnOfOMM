@@ -74,25 +74,43 @@ function get_cond_grat_act(act_dict, animal, condition; win_pre=15, win_post=30)
     grat_onsets = clean_grating_onsets(gratings, xpos)
     act = act_dict[animal][condition]["act"]
 
+    flips = act_dict[animal][condition]["Flip"]
+    flip_onsets = findall(>(1), diff(flips)) .+ 1
+
+    flip_trav_inds = findall(!isempty,
+        [intersect(flip_onsets, trav_inds[i]:trav_inds[i+1]) for i in 1:length(trav_inds)-1])
+
     grat_acts = get_grat_acts(act, grat_onsets, trav_inds; win_pre=win_pre, win_post=win_post)
-    sz = maximum(size.(grat_acts))
-    grat_acts = map(x -> pad_array(x, sz), grat_acts)
+    sz = maximum(size.(grat_acts)) # find largest array size to pad into
+    grat_acts = map(x -> pad_array(x, sz), grat_acts) # pad to largest
     # cells x gratings x time x traversals
-    return permutedims(cat(grat_acts..., dims=4), (1, 4, 2, 3))
+    grat_acts = permutedims(cat(grat_acts..., dims=4), (1, 4, 2, 3))
+
+    flip_acts = grat_acts[:, :, :, flip_trav_inds]
+    g_acts = grat_acts[:, :, :, setdiff(1:size(grat_acts, 4), flip_trav_inds)]
+
+    return g_acts, flip_acts
 
 end
 
 function pool_grat_acts(act_dict, condition; mn_sub=8:12, win_pre=15, win_post=30)
-    grat_acts = [mean_subtract(get_cond_grat_act(act_dict, animal, condition; win_pre=win_pre, win_post=win_post), mn_sub, dims=3) for animal in 4:9]
-    max_trav_len = maximum(size.(grat_acts, 4))
-    grat_acts = map(x -> pad_array(x, (size(x)[1:3]..., max_trav_len)), grat_acts)
-    vcat(grat_acts...)
+    grat_acts = [get_cond_grat_act(act_dict, animal, condition; win_pre=win_pre, win_post=win_post) for animal in 4:9]
+
+    g_acts = first.(grat_acts)
+    flip_acts = last.(grat_acts)
+    map_pad(ga) = begin
+        max_trav_len = maximum(size.(ga, 4))
+        ga_padded = map(x -> pad_array(x, (size(x)[1:3]..., max_trav_len)), ga)
+        return vcat(ga_padded...)
+    end
+
+    return map_pad.((g_acts, flip_acts))
 end
 
 function plot_mean_grat_act(grat_acts, cellinds; title=nothing)
     gratings = ["A1", "B3", "A3", "B4"]
     p = plot()
-    for i in 1:4 # todo why is there a 'y5'?
+    for i in 1:4
         mn, sd = mn_std(squeeze(nanmean(grat_acts[cellinds, i, :, :], dims=1)))
         plot!(p, mn, ribbon=sd / sqrt(length(sd)), fillalpha=0.4, label=gratings[i])
     end
