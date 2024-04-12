@@ -80,12 +80,15 @@ function get_cond_grat_act(act_dict, animal, condition; win_pre=15, win_post=30)
     flip_trav_inds = findall(!isempty,
         [intersect(flip_onsets, trav_inds[i]:trav_inds[i+1]) for i in 1:length(trav_inds)-1])
 
+    (condition in [1, 2]) && (flip_trav_inds = [])
+
     grat_acts = get_grat_acts(act, grat_onsets, trav_inds; win_pre=win_pre, win_post=win_post)
     sz = maximum(size.(grat_acts)) # find largest array size to pad into
     grat_acts = map(x -> pad_array(x, sz), grat_acts) # pad to largest
     # cells x gratings x time x traversals
     grat_acts = permutedims(cat(grat_acts..., dims=4), (1, 4, 2, 3))
 
+    filter!(<(size(grat_acts, 4)), flip_trav_inds)
     flip_acts = grat_acts[:, :, :, flip_trav_inds]
     g_acts = grat_acts[:, :, :, setdiff(1:size(grat_acts, 4), flip_trav_inds)]
 

@@ -3,7 +3,6 @@ using DrWatson
 using LinearAlgebra, Statistics
 using Plots
 
-
 include(srcdir("utils/utils.jl"))
 
 ## ====
@@ -20,9 +19,11 @@ mn_sub = 5:10
 
 using MLJ
 
-function classify_gratings(animal, condition; mn_sub=5:10, mn_window=16:20)
+function classify_gratings(animal, condition; mn_sub=5:10, mn_window=16:20, n_trees=400, max_depth=3)
+    # todo move this out of the function to have option to clasify normal or "flip" traversals at will
     grating_acts, flip_acts = get_cond_grat_act(act_dict, animal, condition; win_pre=win_pre, win_post=win_post)
 
+    # todo this is recomputed every time there's a different mn_sub window, take this out of the function too
     grating_acts_mnsub = mean_subtract(grating_acts, mn_sub, dims=3)
     ga_mn = squeeze(nanmean(grating_acts_mnsub[:, :, mn_window, :], dims=3))
 
@@ -32,39 +33,119 @@ function classify_gratings(animal, condition; mn_sub=5:10, mn_window=16:20)
     (X_train, X_test), (y_train, y_test) = partition((grat_resps', targs), 0.85, multi=true, shuffle=true)
 
     modelType = @load RandomForestClassifier pkg = "BetaML" verbosity = 0
-    model = modelType()
+    model = modelType(n_trees=n_trees, max_depth=max_depth)
     mach = machine(model, X_train, categorical(y_train))
     fit!(mach)
 
     ŷ = Vector{Int64}(mode.(predict(mach, X_test))) # why are these types so weird
+
     return mach, ŷ, y_test
 end
 
+animal, condition = 4, 2
+grating_acts, flip_acts = get_cond_grat_act(act_dict, animal, condition; win_pre=win_pre, win_post=win_post)
+# todo this is recomputed every time there's a different mn_sub window, take this out of the function too
+grating_acts_mnsub = mean_subtract(grating_acts, mn_sub, dims=3)
+ga_mn = squeeze(nanmean(grating_acts_mnsub[:, :, 16:20, :], dims=3))
+
+grat_resps = reshape(ga_mn, size(ga_mn, 1), :)
+targs = repeat(1:5, 1, size(ga_mn)[end])[:]
+
+(X_train, X_test), (y_train, y_test) = partition((grat_resps', targs), 0.85, multi=true, shuffle=true)
+
+modelType = @load SVMClassifier pkg = MLJScikitLearnInterface
+# modelType = @load RandomForestClassifier pkg = "" verbosity = 0
+model = modelType()
+mach = machine(model, X_train, categorical(y_train))
+@time fit!(mach)
+
+ŷ = Vector{Int64}(mode.(predict(mach, X_test))) # why are these types so weird
+accuracy(ŷ, y_test)
+
+## =====
+using DataStructures
+
+function nested_default_dict()
+    return DefaultDict{Any,Any}(nested_default_dict)
+end
 
 begin
-    cm_dict = Dict()
-    for mn_start in [11, 16, 20]
-        cm_dict[mn_start] = Dict()
-        for animal in 4:9
-            @info "Training on animal $(animal), mn_start $(mn_start)"
-            @time mach, ŷ, y_test = classify_gratings(animal, 4; mn_window=mn_start:mn_start+5)
-            cm = confusion_matrix(ŷ, y_test).mat
-            cm_dict[mn_start][animal] = cm
+    cm_dict = nested_default_dict()
+    for condition in 1:4
+        for mn_start in [11, 16, 20]
+            for animal in 1:9
+                if haskey(act_dict[animal], condition)
+                    @info "Training on condition $(condition), animal $(animal), mn_start $(mn_start)"
+                    @time mach, ŷ, y_test = classify_gratings(animal, condition; mn_window=mn_start:mn_start+5)
+                    cm = confusion_matrix(ŷ, y_test).mat
+                    cm_dict[condition][mn_start][animal] = cm
+                end
+            end
         end
     end
 end
 
 ## ====
 
+using DataStructures
+
+using JLD2
+
+JLD2.save("data/exp_pro/grating_classification.jld2", keys_to_string(cm_dict))
+
 begin
     ps = []
-    for (i, mn_start) in enumerate([11, 16, 20])
-        cms = collect(values(cm_dict[mn_start]))
-        cms_n = map(x -> x ./ sum(x, dims=2), cms) |> mean
-        # heatmap!(cms_n)
-        push!(ps, heatmap(cms_n, clim=(0, 1), title=mn_start))
+    for condition in 1:4
+        for (i, mn_start) in enumerate([11, 16, 20])
+            cms = collect(values(cm_dict[mn_start]))
+            cms_n = map(x -> x ./ sum(x, dims=2), cms) |> mean
+            # heatmap!(cms_n)
+            push!(ps, heatmap(cms_n, clim=(0, 1), title=mn_start))
+        end
     end
 end
+
+function get_mn_diag_acc(condition, mn_start)
+    cms = collect(values(cm_dict[condition][mn_start]))
+    cms_p = cat(cms..., dims=3)
+    return mean.(diag.(eachslice(cms_p, dims=3)))
+end
+
+modelType = @load RandomForestClassifier pkg = "BetaML" verbosity = 0
+model = modelType(n_trees=400, max_depth=3)
+
+
+accs = [pad_array(get_mn_diag_acc(cond, 20), (9)) for cond in 1:4]
+ac = hcat(accs...)
+heatmap(ac)
+
+plot(nanmean(ac, dims=1)[:], ribbon=sem(ac, dims=1)[:])
+
+sem(x; dims=2) = nanstd(x, dims=dims) / sqrt(size(x, dims))
+
+
+for condition in 1:4
+    for mn_start in [11, 16, 20]
+        cms = cm_dict[condition][mn_start]
+    end
+end
+
+
+cms = collect(values(cm_dict[16]))
+cms_n = map(x -> x ./ sum(x, dims=2), cms)
+
+cms_p = cat(cms_n..., dims=3)
+d = diag.(eachslice(cms_p, dims=3))
+dmn = hcat(d...)
+heatmap(dmn)
+sem(x; dims=2) = std(x, dims=dims) / size(x, dims)
+plot(mean(dmn, dims=2), ribbon=sem(dmn)[:])
+plot(dmn)
+
+
+
+cms = collect(values(cm_dict[mn_start]))
+
 
 plot(ps..., layout=(3, 1), size=(500, 1500))
 

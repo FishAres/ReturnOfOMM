@@ -114,3 +114,21 @@ function get_clean_grat_inds(act_dict::Dict, animal::Int, condition::Number, f_i
     xpos = act_dict[animal][condition]["VRx"]
     return get_clean_grat_inds(gratings, xpos, f_inds_to_keep)
 end
+
+## ==== 
+using DataStructures: DefaultDict
+"""
+Recursively turn keys of a nested dictionary into strings
+"""
+function keys_to_string(dict)
+    new_dict = Dict()
+    for (k, v) in dict
+        k_str = string(k)
+        if v isa Dict || v isa DefaultDict
+            new_dict[k_str] = keys_to_string(v)
+        else
+            new_dict[k_str] = v
+        end
+    end
+    return new_dict
+end
