@@ -10,20 +10,14 @@ data_dir = "C:/Users/aresf/Desktop/OMM_archive_submission_final/OMM_archive_subm
 
 aux_keys = ["blink", "GratFlash", "Licking", "pupil_diam", "Flip", "Reward", "velP_smoothed", "airPuff", "VRx", "pupil_pos"]
 
-# @time act_dict = get_act_dict(matread(data_dir * "/OMM_1_meta.mat")["proj_meta"], aux_keys)
+# proj_meta = matread(data_dir * "/ARW_20new.mat")["proj_meta"]
+# proj_meta["rd"][23]["timepoint"][:][1]
+
+# @time act_dict = get_act_dict(matread(data_dir * "/OMM3.mat")["proj_meta"], aux_keys)
 using JLD2
+@time act_dict = JLD2.load(datadir("exp_pro", "OMM3_act_dict.jld2"))["act_dict"]
 
-@time act_dict = JLD2.load(datadir("exp_pro", "OMM1_act_dict.jld2"))["act_dict"]
 ## =====
-animal, condition = 5, 4
-
-xpos = act_dict[animal][condition]["VRx"]
-trav_inds = [1; findall(<(-1), diff(xpos)) .+ 1; length(xpos)]
-act = act_dict[animal][condition]["act"]
-
-bin_size = 5 ./ 100
-xt = collect(0:bin_size:5)
-
 function get_trav_act(xpos, act, trav_inds)
     xp = [xpos[trav_inds[i]:trav_inds[i+1]-1] for i in eachindex(trav_inds[1:end-1])]
     a = [act[:, trav_inds[i]:trav_inds[i+1]-1] for i in eachindex(trav_inds[1:end-1])]
@@ -47,22 +41,7 @@ function get_bin_inds(xp; n_bins=100)
     end
     return bin_inds
 end
-
-xp, a = get_trav_act(xpos, act, trav_inds)
-
-@time bin_inds = get_bin_inds.(xp)
-
 ## =====
-
-xpos = act_dict[animal][condition]["VRx"]
-grat = act_dict[animal][condition]["GratFlash"]
-trav_inds = [1; findall(<(-1), diff(xpos)) .+ 1; length(xpos)]
-act = act_dict[animal][condition]["act"]
-grat_offsets = findall(<(-1), diff(grat)) .+ 1
-plotlyjs()
-histogram(xpos[grat_offsets], bins=0:0.1:5)
-
-
 function get_binned_act(xpos, act, trav_inds)
     xp, a = get_trav_act(xpos, act, trav_inds)
     bin_inds = get_bin_inds.(xp)
@@ -73,9 +52,15 @@ function get_binned_act(xpos, act, trav_inds)
     return cat([reduce(hcat, x) for x in binned_acts_list]..., dims=3)
 end
 
+animal, condition = 1, 4
+xpos = act_dict[animal][condition]["VRx"]
+trav_inds = [1; findall(<(-1), diff(xpos)) .+ 1; length(xpos)]
+act = act_dict[animal][condition]["act"]
+
+@time binned_acts = get_binned_act(xpos, act, trav_inds)
 
 begin
-    animal, condition = 5, 4
+    animal, condition = 1, 2
     xpos = act_dict[animal][condition]["VRx"]
     trav_inds = [1; findall(<(-1), diff(xpos)) .+ 1; length(xpos)]
     act = act_dict[animal][condition]["act"]

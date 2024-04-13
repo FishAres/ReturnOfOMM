@@ -2,7 +2,6 @@
 Utility functions for calculating activity arrays
 """
 
-using NaNStatistics
 
 """
 Squeeze it (similar to `np.squeeze`)

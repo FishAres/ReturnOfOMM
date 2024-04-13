@@ -28,7 +28,7 @@ end
 
 function get_act_dict(proj_meta, aux_keys)
     rd = proj_meta["rd"][:]
-    rd[3]["Condition"][:, 4] .= 2 # was noted in original Matlab code
+    proj_meta["Acode"][1] == 1 && (rd[3]["Condition"][:, 4] .= 2) # was noted in original Matlab code
     act_dict = Dict()
     for animal in eachindex(rd)
         r = rd[animal]
@@ -108,7 +108,6 @@ function get_clean_grat_inds(gratings::AbstractArray, xpos::AbstractArray, f_ind
 end
 
 
-
 function get_clean_grat_inds(act_dict::Dict, animal::Int, condition::Number, f_inds_to_keep::Function=inds_to_keep)
     gratings = act_dict[animal][condition]["GratFlash"]
     xpos = act_dict[animal][condition]["VRx"]
@@ -132,6 +131,14 @@ function keys_to_string(dict)
     end
     return new_dict
 end
+
+function nanfunc(f, x; dims=1)
+    nanop = mapslices(x -> f(x[.!isnan.(x)]), x, dims=dims)
+    return nanop
+end
+
+nanmean(x; dims=dims) = nanfunc(mean, x; dims=dims)
+nanstd(x; dims=dims) = nanfunc(std, x; dims=dims)
 
 "hopefully safe nanmean"
 function nanmean_safe(x; dims=2)
