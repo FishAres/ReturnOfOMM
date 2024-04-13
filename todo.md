@@ -6,7 +6,7 @@
     * [ X ] Remove duplicate grating onsets (keep first)
     * [ X ] Function to pad n-d array to desired dims
         * [ ] Make it faster with fewer allocations
-        * [ ] Remove "flips" from the condition 3 recordings where we used 100% flip occurence to show the right grating
+        * [ X ] Remove "flips" from the condition 3 recordings where we used 100% flip occurence to show the right grating
     * Later
         * [ ] Remove duplicate grating onsets (keep longest)
         * [ ] Add option to keep incomplete traversals
@@ -17,6 +17,7 @@
         * [ ]  // // across timepoints (/ hours?)
         * [ ] Plot some cell examples (maybe extract feature weights from random forest?)
     * [ ] Figure 2
+        * [ X ] Spatial binning of activity
         * [ ] Show mean grating-evoked activity per condition
         * [ ] Show distribution of peaks for selective cells
         * [ ] Show (clustered?) activity in spatial coordinates
@@ -30,6 +31,8 @@
 
 
 [ ] Other analyses
+    * [ ] What happens with mixed-selectivity cells during flips/omissions?
+    * [ ] Plot peak flip response as function of cell's peak location for A, B
     * [ ] Predict some behavioral feature from neuronal activity
         * [ ] Same for CA1, ACC
     * [ ] Think of interesting analyses to do. Prioritize insight over technical sexiness

@@ -67,6 +67,15 @@ function get_grat_acts(act, grat_onsets, trav_inds; win_pre=15, win_post=30)
     return map(x -> cat(x..., dims=3), grat_acts)
 end
 
+
+function get_flip_travs(trav_inds, flips)
+    flip_onsets = findall(>(1), diff(flips)) .+ 1
+
+    flip_trav_inds = findall(!isempty,
+        [intersect(flip_onsets, trav_inds[i]:trav_inds[i+1]) for i in 1:length(trav_inds)-1])
+    return flip_trav_inds
+end
+
 function get_cond_grat_act(act_dict, animal, condition; win_pre=15, win_post=30)
     gratings = act_dict[animal][condition]["GratFlash"]
     xpos = act_dict[animal][condition]["VRx"]
@@ -75,11 +84,7 @@ function get_cond_grat_act(act_dict, animal, condition; win_pre=15, win_post=30)
     act = act_dict[animal][condition]["act"]
 
     flips = act_dict[animal][condition]["Flip"]
-    flip_onsets = findall(>(1), diff(flips)) .+ 1
-
-    flip_trav_inds = findall(!isempty,
-        [intersect(flip_onsets, trav_inds[i]:trav_inds[i+1]) for i in 1:length(trav_inds)-1])
-
+    flip_trav_inds = get_flip_travs(trav_inds, flips)
     (condition in [1, 2]) && (flip_trav_inds = [])
 
     grat_acts = get_grat_acts(act, grat_onsets, trav_inds; win_pre=win_pre, win_post=win_post)

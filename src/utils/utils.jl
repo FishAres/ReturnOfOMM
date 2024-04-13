@@ -132,3 +132,13 @@ function keys_to_string(dict)
     end
     return new_dict
 end
+
+"hopefully safe nanmean"
+function nanmean_safe(x; dims=2)
+    try
+        return nanmean(x, dims=dims)
+    catch
+        # println("Error calculating nanmean")
+        return NaN  # or some other default value
+    end
+end
