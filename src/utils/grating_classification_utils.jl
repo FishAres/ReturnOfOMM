@@ -35,7 +35,7 @@ function classify_grat_svm(train_data, test_data)
     (X_train, y_train) = train_data
     (X_test, y_test) = test_data
 
-    modelType = MLJ.@load SVMClassifier pkg = MLJScikitLearnInterface
+    modelType = MLJ.@load SVMClassifier pkg = MLJScikitLearnInterface verbosity = 0
     model = modelType()
     mach = machine(model, X_train, categorical(y_train))
     fit!(mach)

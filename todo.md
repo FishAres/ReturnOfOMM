@@ -13,7 +13,7 @@
 
 [ ] Reproduce paper figures
     * [ ] Figure 1
-        * [ ] Classification of grating + position across conditions
+        * [ X ] Classification of grating + position across conditions
         * [ ]  // // across timepoints (/ hours?)
         * [ ] Plot some cell examples (maybe extract feature weights from random forest?)
     * [ ] Figure 2

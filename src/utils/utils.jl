@@ -144,8 +144,10 @@ function nanfunc(f, x; dims=1)
     return nanop
 end
 
-nanmean(x; dims=dims) = nanfunc(mean, x; dims=dims)
-nanstd(x; dims=dims) = nanfunc(std, x; dims=dims)
+nanmean(x; dims=1) = nanfunc(mean, x; dims=dims)
+nanstd(x; dims=1) = nanfunc(std, x; dims=dims)
+
+
 
 function sem(x; dims=2)
     std = nanstd(x, dims=dims)

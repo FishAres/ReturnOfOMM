@@ -16,16 +16,11 @@ aux_keys = ["blink", "GratFlash", "Licking", "pupil_diam", "Flip", "Reward", "ve
 
 ## ====
 
-win_pre, win_post = 15, 30
-mn_sub = 5:10
 
-using MLJ
-
-
-function classify_conds(; mn_start_inds=16:2:22, mn_win_length=5, frac_train=0.85, win_pre=15, win_post=30, mn_sub=5:10)
+function classify_conds(; mn_start_inds=16:2:22, mn_win_length=5, frac_train=0.85, win_pre=15, win_post=30, mn_sub=5:10, conditions=1:4)
     cm_dict = nested_default_dict() # dict of confusion matrices
     cm_flip_dict = nested_default_dict() # as above but for flip traversals
-    for condition in 1:5
+    for condition in conditions
         for mn_start in mn_start_inds
             for animal in 1:9
                 if haskey(act_dict[animal], condition)
@@ -35,7 +30,7 @@ function classify_conds(; mn_start_inds=16:2:22, mn_win_length=5, frac_train=0.8
 
                     train_data, test_data = split_clean_data(grat_data, targs; frac_train=frac_train)
 
-                    @info "Training on condition $(condition), animal $(animal), mn_start $(mn_start)"
+                    println("Training on condition $(condition), animal $(animal), mn_start $(mn_start)")
                     @time ŷ, y_test, mach = classify_grat_svm(train_data, test_data)
                     cm = confusion_matrix(ŷ, y_test).mat
                     cm_dict[condition][mn_start][animal] = cm
@@ -51,9 +46,10 @@ function classify_conds(; mn_start_inds=16:2:22, mn_win_length=5, frac_train=0.8
     return cm_dict, cm_flip_dict
 end
 
-function get_mean_cms(cm_dict, mn_start_inds)
+"Get a dictionary of normalized confusion matrices"
+function get_mean_cms(cm_dict, mn_start_inds; conditions=1:4)
     mn_dict = Dict()
-    for condition in 1:4
+    for condition in conditions
         mn_dict[condition] = []
         for mn_start in mn_start_inds
             cms = collect(values(cm_dict[condition][mn_start]))
@@ -64,40 +60,45 @@ function get_mean_cms(cm_dict, mn_start_inds)
     return mn_dict
 end
 
-function plot_accs(mn_dict, mn_start_inds, win_index; conditions=1:4)
+function plot_accs(mn_dict, win_index; conditions=1:4, kwargs...)
     acc_array = [mn_dict[cond][win_index] for cond in conditions]
     accs = hcat([pad_array(mean.(diag.(acc)), (9, 1)) for acc in acc_array]...)
 
-    plot(nanmean(accs, dims=1)[:], ribbon=sem(accs, dims=1), legend=false, ylims=(0.2, 0.8))
+    plot(nanmean(accs, dims=1)[:], ribbon=sem(accs, dims=1), ylims=(0.2, 0.8); kwargs...)
     xlabel!("Condition")
     ylabel!("Accuracy")
-    title!("Window $(mn_start_inds[win_index])")
+end
+
+function plot_accs!(mn_dict, win_index; conditions=1:4, kwargs...)
+    acc_array = filter(!isempty, [mn_dict[cond][win_index] for cond in conditions])
+    accs = hcat([pad_array(mean.(diag.(acc)), (9, 1)) for acc in acc_array]...)
+
+    plot!(nanmean(accs, dims=1)[:], ribbon=sem(accs, dims=1), ylims=(0.2, 0.8); kwargs...)
+    xlabel!("Condition")
+    # ylabel!("Accuracy")
 end
 
 
-mn_start_inds = 6:2:26
-cm_dict, cm_flip_dict = classify_conds(mn_start_inds=mn_start_inds)
+## =====
+using Suppressor
+mn_start_inds = 6:3:30
+mn_sub = 1:5
+length(mn_start_inds)
+conditions = 1:4
+
+cm_dict, cm_flip_dict = @suppress_err begin # suppress MLJ type warnings
+    classify_conds(mn_start_inds=mn_start_inds, win_pre=15, win_post=30, mn_sub=mn_sub,
+        conditions=conditions)
+end
 
 
-mn_dict = get_mean_cms(cm_dict, mn_start_inds)
-plot([plot_accs(mn_dict, mn_start_inds, k) for k in eachindex(mn_start_inds)]...)
-
-cm_flip_dict[5]
-
-
-## ====
+"Time in seconds pre/post onset"
+ind_in_secs(k; win_pre=15) = round((mn_start_inds[k] - win_pre) / 15, digits=3)
+mn_dict = get_mean_cms(cm_dict, mn_start_inds, conditions=conditions)
 
 begin
-    ps = []
-    for condition in 1:4
-        for (i, mn_start) in enumerate(11:2:20)
-            cms = collect(values(cm_dict[condition][mn_start]))
-            cms_n = map(x -> x ./ sum(x, dims=2), cms)
-            cms_n = squeeze(nanmean(cat(cms_n..., dims=3), dims=3))
-            push!(ps, heatmap(cms_n, clim=(0, 1), title="$(mn_start), $(condition)", colorbar=false))
-        end
-    end
+    plot([plot_accs(mn_dict, k, conditions=conditions; title="$(win_in_secs(k)) s", legend=false,
+        ) for k in eachindex(mn_start_inds)]..., size=(600, 600))
 end
 
-
-
+savefig("plots/grating_classification_wins.png")

@@ -96,7 +96,7 @@ function get_cond_grat_act(act_dict, animal, condition; win_pre=15, win_post=30)
 
     flips = act_dict[animal][condition]["Flip"]
     flip_trav_inds = get_flip_travs(trav_inds, flips)
-    (condition in [1, 2]) && (flip_trav_inds = [])
+    (condition in [1, 3]) && (flip_trav_inds = [])
 
     grat_acts = get_grat_acts(act, grat_onsets, trav_inds; win_pre=win_pre, win_post=win_post)
     sz = maximum(size.(grat_acts)) # find largest array size to pad into
