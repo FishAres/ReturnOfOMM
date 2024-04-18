@@ -8,6 +8,7 @@ using MAT
 include(srcdir("utils", "grating_utils.jl"))
 include(srcdir("utils", "act_utils.jl"))
 include(srcdir("utils", "selectivity_utils.jl"))
+include(srcdir("utils", "grating_classification_utils.jl"))
 
 
 function get_act_condition(r, condition)
@@ -115,7 +116,13 @@ function get_clean_grat_inds(act_dict::Dict, animal::Int, condition::Number, f_i
 end
 
 ## ==== 
-using DataStructures: DefaultDict
+using DataStructures
+
+"tricky dict to avoid having to create nested dicts in a loop"
+function nested_default_dict()
+    return DefaultDict{Any,Any}(nested_default_dict)
+end
+
 """
 Recursively turn keys of a nested dictionary into strings
 """
@@ -140,12 +147,9 @@ end
 nanmean(x; dims=dims) = nanfunc(mean, x; dims=dims)
 nanstd(x; dims=dims) = nanfunc(std, x; dims=dims)
 
-"hopefully safe nanmean"
-function nanmean_safe(x; dims=2)
-    try
-        return nanmean(x, dims=dims)
-    catch
-        # println("Error calculating nanmean")
-        return NaN  # or some other default value
-    end
+function sem(x; dims=2)
+    std = nanstd(x, dims=dims)
+    return std ./ sqrt.(size(x, dims))
 end
+
+non_nan_rows(x) = findall(z -> !any(isnan, z), eachrow(x))

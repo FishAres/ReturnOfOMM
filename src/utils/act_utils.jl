@@ -14,11 +14,18 @@ end
 """
 Subtract the mean of array x in `window` at dimension `dims`
 """
+# function mean_subtract(x::AbstractArray, window::UnitRange=1:5; dims=2)
+#     ranges = [1:size(x, dim) for dim in 1:ndims(x)]
+#     ranges[dims] = window
+#     mn = mapslices(nanmean, x[ranges...], dims=dims)
+
+#     return x .- mn
+# end
+
 function mean_subtract(x::AbstractArray, window::UnitRange=1:5; dims=2)
     ranges = [1:size(x, dim) for dim in 1:ndims(x)]
     ranges[dims] = window
-    mn = mapslices(nanmean, x[ranges...], dims=dims)
-
+    mn = nanmean(x[ranges...], dims=dims)
     return x .- mn
 end
 
@@ -38,6 +45,9 @@ Pad array `x` with NaNs at dimensions `dims`
 with the help of Copilot. Note that the *number* of dimensions must be equal to those of `x`
 """
 function pad_array(x::AbstractArray, desired_dims)
+    function UR_to_dims(ur)
+        Tuple(i[end] for i in ur)
+    end
     original_dims = size(x)
     padding_dims = desired_dims .- original_dims
 
@@ -47,7 +57,9 @@ function pad_array(x::AbstractArray, desired_dims)
 
             # Replace the range for the dimension to be padded with the padding size
             ranges[dim] = 1:padding_dims[dim]
-            nan_array = fill(NaN, ranges...)
+
+            nan_array = fill(NaN, UR_to_dims(ranges))
+
             x = cat(x, nan_array, dims=dim)
         end
     end
