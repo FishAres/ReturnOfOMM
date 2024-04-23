@@ -139,6 +139,9 @@ function keys_to_string(dict)
     return new_dict
 end
 
+
+# = Stuff to deal with NaNs
+
 function nanfunc(f, x; dims=1)
     nanop = mapslices(x -> f(x[.!isnan.(x)]), x, dims=dims)
     return nanop
@@ -147,11 +150,18 @@ end
 nanmean(x; dims=1) = nanfunc(mean, x; dims=dims)
 nanstd(x; dims=1) = nanfunc(std, x; dims=dims)
 
-
-
+"standard error of the mean"
 function sem(x; dims=2)
     std = nanstd(x, dims=dims)
     return std ./ sqrt.(size(x, dims))
 end
 
 non_nan_rows(x) = findall(z -> !any(isnan, z), eachrow(x))
+
+function filter_nan_col(x)
+    x[:, [!any(isnan.(col)) for col in eachcol(x)]]
+end
+
+function filter_nan_row(x)
+    x[[!any(isnan.(row)) for row in eachrow(x)], :]
+end

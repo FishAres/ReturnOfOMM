@@ -14,6 +14,14 @@ function get_selectivity_index(grat_acts; thresh=0.01, mn_window=20:25)
     return si
 end
 
+function get_a_b_cells(grat_act; sel_thresh=0.33, act_thresh=0.01, mn_window=16:25)
+    selectivity_index(a, b) = (a - b) ./ abs.(a + b)
+    si = get_selectivity_index(grat_act; thresh=act_thresh, mn_window=mn_window)
+    a_cells = findall(>=(sel_thresh), si)
+    b_cells = findall(<=(-sel_thresh), si)
+    return a_cells, b_cells
+end
+
 function plot_a_b_cells(grat_acts, a_cells, b_cells)
     pa = plot_mean_grat_act(grat_acts, a_cells; title="A cells")
     ylims!(-0.03, 0.08)

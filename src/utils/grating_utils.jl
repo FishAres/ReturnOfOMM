@@ -23,6 +23,9 @@ function gratings_per_trav(grat_onsets, trav_inds)
     grt_onsets = fill(NaN, (length(trav_inds) - 1, 5))
     for i in 1:length(trav_inds)-1
         trav_grat_onsets = intersect(grat_onsets, trav_inds[i]:trav_inds[i+1])
+        if length(trav_grat_onsets) > 5
+            trav_grat_onsets = trav_grat_onsets[1:5]
+        end
         for gr in eachindex(trav_grat_onsets)
             grt_onsets[i, gr] = trav_grat_onsets[gr]
         end

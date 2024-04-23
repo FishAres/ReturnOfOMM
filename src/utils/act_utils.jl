@@ -90,7 +90,7 @@ end
 function get_cond_grat_act(act_dict, animal, condition; win_pre=15, win_post=30)
     gratings = act_dict[animal][condition]["GratFlash"]
     xpos = act_dict[animal][condition]["VRx"]
-    trav_inds = [1; findall(<(-1), diff(xpos)) .+ 1; length(xpos)]
+    trav_inds = [1; findall(<(-0.4), diff(xpos)) .+ 1; length(xpos)]
     grat_onsets = clean_grating_onsets(gratings, xpos)
     act = act_dict[animal][condition]["act"]
 
