@@ -8,7 +8,7 @@ using MAT
 include(srcdir("utils", "grating_utils.jl"))
 include(srcdir("utils", "act_utils.jl"))
 include(srcdir("utils", "selectivity_utils.jl"))
-include(srcdir("utils", "grating_classification_utils.jl"))
+
 
 
 function get_act_condition(r, condition)

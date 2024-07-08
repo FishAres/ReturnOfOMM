@@ -4,6 +4,7 @@ using LinearAlgebra, Statistics
 using Plots
 using JLD2
 include(srcdir("utils/utils.jl"))
+include(srcdir("utils", "grating_classification_utils.jl"))
 
 ## ====
 data_dir = "C:/Users/aresf/Desktop/OMM_archive_submission_final/OMM_archive_submission_final/data"
